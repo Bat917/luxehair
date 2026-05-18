@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LuxeHair — Premium Human Hair Wigs</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--cream:#F9F5F0;--white:#FFFCF8;--gold:#C9A96E;--gold-l:#E8D5B0;--deep:#1A1208;--mid:#3D2E14;--text:#2C2215;--muted:#8A7A65;--accent:#D4875A;--teal:#2A7A7A}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--white);color:var(--text);overflow-x:hidden}
+
+/* ANNOUNCE */
+.announce{background:var(--deep);color:var(--gold-l);text-align:center;padding:9px;font-size:11px;letter-spacing:2px;text-transform:uppercase}
+.announce b{color:var(--gold);margin:0 8px}
+
+/* HEADER */
+header{background:var(--white);border-bottom:1px solid #EDE4D8;position:sticky;top:0;z-index:200;padding:0 16px}
+.hd{display:flex;align-items:center;justify-content:space-between;height:60px;max-width:1200px;margin:0 auto}
+.hbtn{background:none;border:none;cursor:pointer;display:flex;flex-direction:column;gap:5px;padding:4px}
+.hbtn span{display:block;width:22px;height:2px;background:var(--deep);border-radius:2px}
+.logo{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:var(--deep);text-decoration:none}
+.logo em{color:var(--gold);font-style:italic}
+.hright{display:flex;align-items:center;gap:14px}
+.ibtn{background:none;border:none;cursor:pointer;color:var(--mid);font-size:19px}
+.ibtn:hover{color:var(--gold)}
+
+/* SIDE MENU */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;opacity:0;pointer-events:none;transition:opacity .3s}
+.overlay.on{opacity:1;pointer-events:all}
+.sidemenu{position:fixed;top:0;left:0;bottom:0;width:285px;background:white;z-index:400;transform:translateX(-100%);transition:transform .35s cubic-bezier(.77,0,.18,1);box-shadow:4px 0 40px rgba(0,0,0,.15);display:flex;flex-direction:column}
+.sidemenu.on{transform:translateX(0)}
+.smhead{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #EDE4D8}
+.smclose{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)}
+.smbody{flex:1;overflow-y:auto}
+.smitem{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;cursor:pointer;font-size:14px;font-weight:500;color:var(--deep);border-bottom:1px solid #F5F0EA}
+.smitem:hover{background:#FBF8F4}
+.smlabel{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:18px 20px 6px;border-bottom:none;cursor:default}
+.submenu{background:#FAF7F3;display:none}
+.submenu.on{display:block}
+.subitem{display:block;padding:10px 32px;font-size:13px;color:var(--mid);text-decoration:none;border-bottom:1px solid #F0EBE3}
+.subitem:hover{color:var(--gold)}
+.smfoot{padding:16px 20px;border-top:1px solid #EDE4D8}
+.smlogin{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--mid);margin-bottom:16px;cursor:pointer}
+.smsoc{display:flex;gap:12px}
+.smsoc a{color:var(--muted);font-size:16px;text-decoration:none}
+.smsoc a:hover{color:var(--gold)}
+
+/* HERO */
