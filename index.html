@@ -1,50 +1,400 @@
-<!DOCTYPE html>
+python3 << 'EOF'
+import base64, io
+from PIL import Image
+
+files = [
+    '/mnt/user-data/uploads/1000011697.webp',
+    '/mnt/user-data/uploads/1000011687.jpg',
+    '/mnt/user-data/uploads/1000011696.webp',
+    '/mnt/user-data/uploads/1000011680.jpg',
+    '/mnt/user-data/uploads/1000011686.jpg',
+]
+
+b64s = []
+for path in files:
+    img = Image.open(path)
+    if img.mode in ('RGBA','P'): img = img.convert('RGB')
+    w,h = img.size
+    if w > 400: img = img.resize((400, int(h*400/w)), Image.LANCZOS)
+    buf = io.BytesIO()
+    img.save(buf, format='JPEG', quality=50, optimize=True)
+    b64s.append(base64.b64encode(buf.getvalue()).decode())
+
+total = sum(len(b) for b in b64s)
+print(f"Total image data: {total//1000}KB")
+print(f"Images: {[len(b)//1000 for b in b64s]}KB each")
+
+# Save b64s for next step
+import json
+with open('/tmp/b64s.json','w') as f:
+    json.dump(b64s, f)
+EOF
+python3 << 'EOF'
+import json, re
+
+with open('/tmp/b64s.json') as f:
+    b64s = json.load(f)
+
+imgs = [f"data:image/jpeg;base64,{b}" for b in b64s]
+
+code = '''<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>LuxeHair — Premium Human Hair Wigs</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--cream:#F9F5F0;--white:#FFFCF8;--gold:#C9A96E;--gold-l:#E8D5B0;--deep:#1A1208;--mid:#3D2E14;--text:#2C2215;--muted:#8A7A65;--accent:#D4875A;--teal:#2A7A7A}
 *{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{font-family:'DM Sans',sans-serif;background:var(--white);color:var(--text);overflow-x:hidden}
-
-/* ANNOUNCE */
-.announce{background:var(--deep);color:var(--gold-l);text-align:center;padding:9px;font-size:11px;letter-spacing:2px;text-transform:uppercase}
-.announce b{color:var(--gold);margin:0 8px}
-
-/* HEADER */
-header{background:var(--white);border-bottom:1px solid #EDE4D8;position:sticky;top:0;z-index:200;padding:0 16px}
+body{font-family:'DM Sans',sans-serif;background:#FFFCF8;color:#2C2215;overflow-x:hidden}
+.announce{background:#1A1208;color:#E8D5B0;text-align:center;padding:9px;font-size:11px;letter-spacing:2px;text-transform:uppercase}
+.announce b{color:#C9A96E;margin:0 8px}
+header{background:#FFFCF8;border-bottom:1px solid #EDE4D8;position:sticky;top:0;z-index:200;padding:0 16px}
 .hd{display:flex;align-items:center;justify-content:space-between;height:60px;max-width:1200px;margin:0 auto}
 .hbtn{background:none;border:none;cursor:pointer;display:flex;flex-direction:column;gap:5px;padding:4px}
-.hbtn span{display:block;width:22px;height:2px;background:var(--deep);border-radius:2px}
-.logo{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:var(--deep);text-decoration:none}
-.logo em{color:var(--gold);font-style:italic}
+.hbtn span{display:block;width:22px;height:2px;background:#1A1208;border-radius:2px}
+.logo{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:#1A1208;text-decoration:none}
+.logo em{color:#C9A96E;font-style:italic}
 .hright{display:flex;align-items:center;gap:14px}
-.ibtn{background:none;border:none;cursor:pointer;color:var(--mid);font-size:19px}
-.ibtn:hover{color:var(--gold)}
-
-/* SIDE MENU */
+.ibtn{background:none;border:none;cursor:pointer;color:#3D2E14;font-size:19px}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;opacity:0;pointer-events:none;transition:opacity .3s}
 .overlay.on{opacity:1;pointer-events:all}
-.sidemenu{position:fixed;top:0;left:0;bottom:0;width:285px;background:white;z-index:400;transform:translateX(-100%);transition:transform .35s cubic-bezier(.77,0,.18,1);box-shadow:4px 0 40px rgba(0,0,0,.15);display:flex;flex-direction:column}
+.sidemenu{position:fixed;top:0;left:0;bottom:0;width:280px;background:white;z-index:400;transform:translateX(-100%);transition:transform .35s;box-shadow:4px 0 40px rgba(0,0,0,.15);display:flex;flex-direction:column}
 .sidemenu.on{transform:translateX(0)}
 .smhead{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid #EDE4D8}
-.smclose{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted)}
+.smclose{background:none;border:none;font-size:20px;cursor:pointer}
 .smbody{flex:1;overflow-y:auto}
-.smitem{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;cursor:pointer;font-size:14px;font-weight:500;color:var(--deep);border-bottom:1px solid #F5F0EA}
+.smitem{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;cursor:pointer;font-size:14px;font-weight:500;border-bottom:1px solid #F5F0EA}
 .smitem:hover{background:#FBF8F4}
-.smlabel{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-weight:600;padding:18px 20px 6px;border-bottom:none;cursor:default}
+.smlabel{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#C9A96E;font-weight:600;padding:16px 20px 6px;border-bottom:none;cursor:default}
 .submenu{background:#FAF7F3;display:none}
 .submenu.on{display:block}
-.subitem{display:block;padding:10px 32px;font-size:13px;color:var(--mid);text-decoration:none;border-bottom:1px solid #F0EBE3}
-.subitem:hover{color:var(--gold)}
+.subitem{display:block;padding:10px 32px;font-size:13px;color:#3D2E14;text-decoration:none;border-bottom:1px solid #F0EBE3}
 .smfoot{padding:16px 20px;border-top:1px solid #EDE4D8}
-.smlogin{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--mid);margin-bottom:16px;cursor:pointer}
+.smlogin{display:flex;align-items:center;gap:8px;font-size:14px;color:#3D2E14;margin-bottom:14px;cursor:pointer}
 .smsoc{display:flex;gap:12px}
-.smsoc a{color:var(--muted);font-size:16px;text-decoration:none}
-.smsoc a:hover{color:var(--gold)}
+.smsoc a{color:#8A7A65;font-size:16px;text-decoration:none}
+.hero{position:relative;height:min(85vw,560px);min-height:280px;overflow:hidden;touch-action:pan-y}
+.slides{display:flex;width:300%;height:100%;transition:transform .7s cubic-bezier(.77,0,.18,1)}
+.slide{width:33.333%;height:100%;position:relative;display:flex;align-items:center}
+.sbg{position:absolute;inset:0}
+.s1{background:linear-gradient(130deg,#0B3D50,#127A90,#3AB8D0 70%,#8ADAE8)}
+.s2{background:linear-gradient(130deg,#2A1040,#5A208A,#9A60D0)}
+.s3{background:linear-gradient(130deg,#301800,#7A4010,#C49040)}
+.sovl{position:absolute;inset:0;background:linear-gradient(to right,rgba(0,0,0,.6),rgba(0,0,0,.1) 55%,transparent)}
+.scont{position:relative;z-index:2;padding:0 24px;max-width:58%}
+.stag{display:inline-block;border:1px solid #C9A96E;color:#C9A96E;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:5px 13px;margin-bottom:10px;opacity:0;transform:translateY(12px);transition:all .5s .1s}
+.slide.act .stag{opacity:1;transform:translateY(0)}
+.spromo{font-family:'Cormorant Garamond',serif;font-size:clamp(44px,10vw,100px);font-weight:600;color:white;line-height:.92;margin-bottom:8px;opacity:0;transform:translateY(18px);transition:all .6s .25s}
+.slide.act .spromo{opacity:1;transform:translateY(0)}
+.sh1{font-family:'Cormorant Garamond',serif;font-size:clamp(28px,6vw,60px);font-weight:300;color:white;line-height:1.08;margin-bottom:8px;opacity:0;transform:translateY(18px);transition:all .6s .25s}
+.slide.act .sh1{opacity:1;transform:translateY(0)}
+.sh1 em{font-style:italic;color:#E8D5B0}
+.sdesc{font-size:clamp(11px,2vw,14px);color:rgba(255,255,255,.8);margin-bottom:20px;line-height:1.6;opacity:0;transform:translateY(10px);transition:all .5s .4s}
+.slide.act .sdesc{opacity:1;transform:translateY(0)}
+.sbtn{display:inline-block;border:2px solid white;color:white;padding:10px 24px;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;text-decoration:none;cursor:pointer;background:transparent;opacity:0;transform:translateY(8px)}
+.slide.act .sbtn{opacity:1;transform:translateY(0);transition:border .25s,background .25s,color .25s,opacity .5s .55s,transform .5s .55s}
+.sbtn:hover{background:white;color:#1A1208}
+.hdots{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:10}
+.dot{width:18px;height:2px;background:rgba(255,255,255,.4);cursor:pointer;transition:all .3s;border-radius:2px}
+.dot.act{background:white;width:32px}
+.circles{padding:18px 12px 12px;background:white;border-bottom:1px solid #F0EBE3}
+.clist{display:flex;gap:10px;justify-content:center;overflow-x:auto;scrollbar-width:none}
+.clist::-webkit-scrollbar{display:none}
+.citem{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;min-width:64px}
+.cring{width:64px;height:64px;border-radius:50%;overflow:hidden;border:3px solid transparent;transition:border-color .2s,transform .2s;display:flex;align-items:center;justify-content:center}
+.citem:hover .cring{border-color:#2A7A7A;transform:scale(1.07)}
+.clabel{font-size:10px;text-align:center;font-weight:500;line-height:1.3}
+.trust{background:#1A1208;padding:12px 16px;display:flex;justify-content:center;gap:20px;flex-wrap:wrap}
+.titem{display:flex;align-items:center;gap:6px;color:#E8D5B0;font-size:11px}
+.sec{padding:24px 14px;max-width:1200px;margin:0 auto}
+.secrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.sech2{font-size:20px;font-weight:700;color:#1A1208}
+.seeall{font-size:13px;color:#2A7A7A;text-decoration:none;font-weight:500}
+.pgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:600px){.pgrid{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:900px){.pgrid{grid-template-columns:repeat(4,1fr)}}
+.pcard{background:white;border-radius:8px;overflow:hidden;cursor:pointer;position:relative;box-shadow:0 2px 10px rgba(0,0,0,.1);transition:box-shadow .3s,transform .3s;border:1px solid #F0EBE3}
+.pcard:hover{box-shadow:0 8px 24px rgba(0,0,0,.15);transform:translateY(-3px)}
+.pimg{position:relative;aspect-ratio:3/4;overflow:hidden;background:#111}
+.pimgbg{width:100%;height:100%;overflow:hidden}
+.pimgbg img{width:100%;height:100%;object-fit:cover;display:block}
+.pimgbg.nobg{background:linear-gradient(160deg,#2A1208,#6B3018 40%,#C4804A 80%)}
+.pimgbg.nobg2{background:linear-gradient(160deg,#120820,#2A1040 40%,#6A3490 80%)}
+.pimgbg.nobg3{background:linear-gradient(160deg,#080818,#101038 40%,#282878 80%)}
+.pimgbg.nobg4{background:linear-gradient(160deg,#200808,#501010 40%,#C04040 80%)}
+.pimgbg.nobg5{background:linear-gradient(160deg,#0A200A,#1A4A1A 40%,#3A8A3A 80%)}
+.pimgbg.nobg6{background:linear-gradient(160deg,#201008,#503018 40%,#A06030 80%)}
+.pimgbg.nobg7{background:linear-gradient(160deg,#200820,#501050 40%,#A040A0 80%)}
+.pimgbg.nobg8{background:linear-gradient(160deg,#080820,#181848 40%,#2A2A70 80%)}
+.pimgbg.nobg9{background:linear-gradient(160deg,#1A1208,#3A2A18 50%,#6A5040)}
+.pbadge{position:absolute;top:8px;left:8px;background:#2A7A7A;color:white;font-size:11px;font-weight:700;padding:5px 12px;border-radius:20px}
+.pinfo{padding:10px 12px 12px}
+.pname{font-size:12px;color:#2C2215;line-height:1.4;margin-bottom:6px;font-weight:500}
+.pstars{color:#F5A623;font-size:11px;margin-bottom:4px}
+.pstars span{color:#8A7A65;font-size:10px}
+.pprice{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.pfrom{font-size:10px;color:#8A7A65}
+.pnew{font-size:15px;font-weight:700;color:#1A1208}
+.pold{font-size:11px;color:#999;text-decoration:line-through}
+.patcbtn{width:100%;background:#1A1208;color:white;border:none;padding:10px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-radius:4px}
+.patcbtn:hover{background:#2A7A7A}
+.banners{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:#111}
+@media(max-width:580px){.banners{grid-template-columns:1fr}}
+.bp{padding:32px 20px;position:relative;overflow:hidden;cursor:pointer}
+.bp1{background:linear-gradient(135deg,#3A2A10,#7A5520)}
+.bp2{background:linear-gradient(135deg,#1A0D25,#3D1A50)}
+.bpey{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#C9A96E;margin-bottom:8px}
+.bptit{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:white;margin-bottom:8px;line-height:1.2}
+.bptit em{font-style:italic}
+.bpsub{font-size:12px;color:rgba(255,255,255,.6);margin-bottom:16px;line-height:1.6}
+.bpdeco{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:60px;opacity:.07}
+.btngold{background:#C9A96E;color:#1A1208;padding:9px 18px;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border:none;cursor:pointer}
+.btnout{border:1px solid #C9A96E;color:#C9A96E;padding:9px 18px;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;cursor:pointer;background:none}
+.nl{background:#F9F5F0;padding:48px 16px;text-align:center}
+.nley{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#C9A96E;margin-bottom:10px}
+.nltit{font-family:'Cormorant Garamond',serif;font-size:clamp(24px,5vw,42px);font-weight:300;color:#1A1208;margin-bottom:10px;line-height:1.2}
+.nltit em{font-style:italic;color:#D4875A}
+.nlsub{font-size:14px;color:#8A7A65;margin-bottom:22px;line-height:1.7}
+.nlperks{display:flex;justify-content:center;gap:18px;margin-bottom:22px;flex-wrap:wrap}
+.nlperk{display:flex;align-items:center;gap:6px;font-size:13px}
+.nlform{display:flex;max-width:380px;margin:0 auto}
+.nlinput{flex:1;border:1px solid #D9CFC4;border-right:none;padding:12px 15px;font-family:'DM Sans',sans-serif;font-size:14px;background:white;outline:none}
+.nlbtn{background:#1A1208;color:#E8D5B0;border:none;padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+footer{background:#1A1208;padding:40px 16px 20px}
+.ftop{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding-bottom:28px;border-bottom:1px solid rgba(255,255,255,.08);max-width:1200px;margin:0 auto}
+@media(min-width:768px){.ftop{grid-template-columns:2fr 1fr 1fr 1fr}}
+.flogo{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:#E8D5B0;margin-bottom:10px;display:block}
+.flogo em{font-style:italic;color:#C9A96E}
+.fdesc{font-size:12px;color:rgba(255,255,255,.4);line-height:1.8;margin-bottom:14px}
+.fsoc{display:flex;gap:8px}
+.fsoca{width:30px;height:30px;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:12px;text-decoration:none;border-radius:50%}
+.fctit{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#C9A96E;margin-bottom:10px}
+.flinks{list-style:none;display:flex;flex-direction:column;gap:8px}
+.flinks a{font-size:12px;color:rgba(255,255,255,.4);text-decoration:none}
+.fbot{max-width:1200px;margin:18px auto 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.fcopy{font-size:11px;color:rgba(255,255,255,.25)}
+.pays{display:flex;gap:5px;flex-wrap:wrap}
+.pay{background:rgba(255,255,255,.07);border-radius:3px;padding:3px 6px;font-size:10px;color:rgba(255,255,255,.35)}
+.livechat{position:fixed;bottom:16px;right:16px;z-index:500;background:#2A7A7A;color:white;border:none;padding:10px 14px;border-radius:20px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;box-shadow:0 4px 16px rgba(42,122,122,.4);display:flex;align-items:center;gap:6px}
+.cdot{width:7px;height:7px;background:#5EFF9A;border-radius:50%;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.4);opacity:.7}}
+.chatpop{position:fixed;bottom:60px;right:16px;z-index:500;background:white;border-radius:12px;width:260px;box-shadow:0 8px 32px rgba(0,0,0,.18);transform:scale(.9) translateY(8px);opacity:0;pointer-events:none;transition:all .25s;overflow:hidden}
+.chatpop.on{transform:scale(1) translateY(0);opacity:1;pointer-events:all}
+.cphead{background:#2A7A7A;color:white;padding:12px 14px}
+.cphead h4{font-size:13px;font-weight:600;margin-bottom:2px}
+.cphead p{font-size:11px;opacity:.8}
+.cpbody{padding:12px 14px}
+.cpmsg{background:#F0F7F7;border-radius:8px;padding:8px 11px;font-size:12px;line-height:1.5;margin-bottom:10px}
+.cprow{display:flex;gap:7px}
+.cpinput{flex:1;border:1px solid #DDD;border-radius:16px;padding:7px 12px;font-size:12px;outline:none}
+.cpsend{background:#2A7A7A;color:white;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer}
+.pp{position:fixed;inset:0;background:#FFFCF8;z-index:1000;overflow-y:auto;display:none}
+.pp.on{display:block;animation:ppIn .35s cubic-bezier(.77,0,.18,1)}
+@keyframes ppIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.pphd{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:54px;background:white;border-bottom:1px solid #EDE4D8;position:sticky;top:0;z-index:10}
+.ppback{display:flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;font-size:14px;font-weight:600;color:#2A7A7A;font-family:'DM Sans',sans-serif}
+.pphlogo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:#1A1208}
+.pphlogo em{color:#C9A96E;font-style:italic}
+.ppbody{max-width:900px;margin:0 auto;padding:16px 14px 60px}
+.ppcrumb{font-size:12px;color:#8A7A65;margin-bottom:14px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.ppcrumb a{color:#2A7A7A;text-decoration:none}
+.pplayout{display:grid;grid-template-columns:1fr;gap:22px}
+@media(min-width:620px){.pplayout{grid-template-columns:1fr 1fr}}
+.ppimgarea{position:relative}
+.ppimg{width:100%;aspect-ratio:1/1;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:8px;background:#F0EBE3}
+.ppimg img{width:100%;height:100%;object-fit:cover}
+.ppimgbg{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.ppsaletag{position:absolute;top:10px;left:10px;background:#2A7A7A;color:white;font-size:11px;font-weight:700;padding:4px 10px;border-radius:18px}
+.ppthumbs{display:flex;gap:7px;overflow-x:auto;padding-bottom:4px}
+.ppthumb{width:54px;height:54px;border-radius:4px;flex-shrink:0;border:2px solid transparent;cursor:pointer;transition:border-color .2s}
+.ppthumb.act{border-color:#2A7A7A}
+.ppinfo{display:flex;flex-direction:column;gap:13px}
+.ppstore{font-size:12px;color:#2A7A7A;font-weight:600}
+.ppname{font-family:'Cormorant Garamond',serif;font-size:clamp(18px,4vw,26px);font-weight:400;color:#1A1208;line-height:1.25}
+.ppratrow{display:flex;align-items:center;gap:7px}
+.ppstars{color:#F5A623;font-size:13px}
+.ppratcnt{font-size:12px;color:#8A7A65}
+.ppbought{font-size:12px;color:#2A7A7A;font-weight:600}
+.ppdiv{border:none;border-top:1px solid #F0EBE3}
+.ppprrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ppnew{font-size:26px;font-weight:700;color:#D4875A}
+.ppold{font-size:14px;color:#8A7A65;text-decoration:line-through}
+.ppsave{background:#FFF0E8;color:#D4875A;font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px}
+.pplbl{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#8A7A65;margin-bottom:6px;font-weight:600}
+.ppsizes{display:flex;gap:6px;flex-wrap:wrap}
+.ppsizebtn{border:1px solid #D9CFC4;background:white;padding:7px 12px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;border-radius:3px;transition:all .2s}
+.ppsizebtn:hover,.ppsizebtn.act{border-color:#2A7A7A;background:#2A7A7A;color:white}
+.ppqrow{display:flex;align-items:center;gap:10px}
+.ppqbtn{width:34px;height:34px;border:1px solid #D9CFC4;background:white;font-size:18px;cursor:pointer;border-radius:3px;display:flex;align-items:center;justify-content:center}
+.ppqnum{font-size:15px;font-weight:600;min-width:30px;text-align:center}
+.ppacts{display:flex;flex-direction:column;gap:8px}
+.ppaddbtn{width:100%;background:#1A1208;color:#E8D5B0;border:none;padding:14px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-radius:3px}
+.ppaddbtn:hover{background:#2A7A7A}
+.ppbuybtn{width:100%;background:#2A7A7A;color:white;border:none;padding:14px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-radius:3px}
+.ppfeats{display:flex;flex-direction:column;gap:7px}
+.ppfeat{display:flex;align-items:center;gap:8px;font-size:13px;color:#3D2E14}
+.ppfeat .ck{color:#2A7A7A;font-size:14px}
+.ppship{background:#F5FAF9;border-radius:6px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.ppshipi{display:flex;align-items:center;gap:8px;font-size:12px;color:#3D2E14}
+.ppshipi span:first-child{font-size:16px}
+.ppcats{font-size:11px;color:#8A7A65}
+.ppcats a{color:#2A7A7A;text-decoration:none}
+.rev{opacity:0;transform:translateY(20px);transition:opacity .6s,transform .6s}
+.rev.vis{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+<div class="announce">Repurchased By 100,000+ Customers <b>✦</b> Free Shipping $89+ <b>✦</b> 30-Day Returns</div>
+<header>
+<div class="hd">
+<button class="hbtn" onclick="openMenu()"><span></span><span></span><span></span></button>
+<a href="#" class="logo">Luxe<em>Hair</em></a>
+<div class="hright"><button class="ibtn">🔍</button><button class="ibtn">👤</button><button class="ibtn" style="position:relative">🛒<span style="position:absolute;top:-5px;right:-7px;background:#D4875A;color:white;font-size:9px;font-weight:700;width:14px;height:14px;border-radius:50%;display:flex;align-items:center;justify-content:center">0</span></button></div>
+</div>
+</header>
+<div class="overlay" id="ov" onclick="closeMenu()"></div>
+<div class="sidemenu" id="sm">
+<div class="smhead"><span class="logo">Luxe<em>Hair</em></span><button class="smclose" onclick="closeMenu()">✕</button></div>
+<div class="smbody">
+<div class="smitem" onclick="location.href='#'">Home</div>
+<div class="smitem smlabel">Collection</div>
+<div class="smitem" onclick="toggleSub('s1')">🔥 Drawstring 360 Wigs <span>›</span></div>
+<div class="submenu" id="s1"><a class="subitem" href="#">Invisi Strap 360 Wig</a><a class="subitem" href="#">Pull Go Wig</a><a class="subitem" href="#">Curtain Bang Wigs</a></div>
+<div class="smitem" onclick="toggleSub('s2')">9x6 Glueless Wig <span>›</span></div>
+<div class="submenu" id="s2"><a class="subitem" href="#">4C Edges Hairline Wig</a><a class="subitem" href="#">13x4 Lace Frontal Wig</a></div>
+<div class="smitem smlabel">New In</div>
+<div class="smitem" onclick="toggleSub('s3')">Best Sellers <span>›</span></div>
+<div class="submenu" id="s3"><a class="subitem" href="#">HD Swiss Lace Wig</a><a class="subitem" href="#">Chic Color</a><a class="subitem" href="#">Bob Wig</a></div>
+<div class="smitem" style="color:#D04020">🔥 Sale Zone</div>
+</div>
+<div class="smfoot"><div class="smlogin">👤 Log in</div><div class="smsoc"><a href="#">f</a><a href="#">📷</a><a href="#">♪</a><a href="#">▶</a></div></div>
+</div>
+<section class="hero" id="hero">
+<div class="slides" id="slides">
+<div class="slide act"><div class="sbg s1"></div><div class="sovl"></div><div class="scont"><span class="stag">Summer Slaycation</span><div class="spromo">$100<br>OFF</div><p class="sdesc">Stars, Stripes &amp; Stunning Hair</p><a href="#" class="sbtn">SHOP NOW</a></div></div>
+<div class="slide"><div class="sbg s2"></div><div class="sovl"></div><div class="scont"><span class="stag">Best Seller</span><h1 class="sh1">Pull &amp; Go<br><em>Glueless Wigs</em></h1><p class="sdesc">Ready in 60 seconds.</p><a href="#" class="sbtn">SHOP NOW</a></div></div>
+<div class="slide"><div class="sbg s3"></div><div class="sovl"></div><div class="scont"><span class="stag">New Arrivals</span><h1 class="sh1">HD Lace<br><em>Collection</em></h1><p class="sdesc">Undetectable. 100% Human Hair.</p><a href="#" class="sbtn">SHOP NOW</a></div></div>
+</div>
+<div class="hdots"><div class="dot act" onclick="goTo(0)"></div><div class="dot" onclick="goTo(1)"></div><div class="dot" onclick="goTo(2)"></div></div>
+</section>
+<div class="circles rev">
+<div class="clist">
+<div class="citem"><div class="cring" style="background:radial-gradient(circle,#C4915A,#7A4520)"><span style="font-size:24px">💁</span></div><span class="clabel">Drawstring 360</span></div>
+<div class="citem"><div class="cring" style="background:radial-gradient(circle,#8A60A0,#3D1A50)"><span style="font-size:24px">✂️</span></div><span class="clabel">Pull To Go</span></div>
+<div class="citem"><div class="cring" style="background:radial-gradient(circle,#5ABCD4,#1A5A7A)"><span style="font-size:24px">💎</span></div><span class="clabel">HD Lace</span></div>
+<div class="citem"><div class="cring" style="background:radial-gradient(circle,#D4875A,#8A4A20)"><span style="font-size:24px">🎨</span></div><span class="clabel">Chic Color</span></div>
+<div class="citem"><div class="cring" style="background:radial-gradient(circle,#4A9A6A,#1A5A3A)"><span style="font-size:24px">✂️</span></div><span class="clabel">Short Cut</span></div>
+<div class="citem"><div class="cring" style="background:#2A7A7A"><span style="color:white;font-size:9px;font-weight:700;text-align:center;line-height:1.3;padding:3px">Clearance<br>Sale</span></div><span class="clabel">Clearance</span></div>
+</div>
+</div>
+<div class="trust"><div class="titem">🚚 Free Shipping $89+</div><div class="titem">⚡ 72Hr Express</div><div class="titem">↩️ 30-Day Returns</div><div class="titem">✨ 100% Human Hair</div></div>
+<div class="sec rev">
+<div class="secrow"><h2 class="sech2">Best Sellers</h2><a href="#" class="seeall">See All →</a></div>
+<div class="pgrid">
+<div class="pcard" onclick="openPP(1)"><div class="pimg"><div class="pimgbg"><img src="IMG1" alt="wig"></div><span class="pbadge">Sale!</span></div><div class="pinfo"><div class="pstars">★★★★★ <span>52</span></div><div class="pname">Wigcool Curtain Bangs Glueless Swiss HD Lace...</div><div class="pprice"><span class="pold">$217.49</span><span class="pfrom">From</span><span class="pnew">$148.49</span></div><button class="patcbtn" onclick="event.stopPropagation();atc(this)">ADD TO CART</button></div></div>
+<div class="pcard" onclick="openPP(2)"><div class="pimg"><div class="pimgbg"><img src="IMG2" alt="wig"></div><span class="pbadge">Sale!</span></div><div class="pinfo"><div class="pstars">★★★★★ <span>18</span></div><div class="pname">WigCool Black Wig Honey Brown Highlights...</div><div class="pprice"><span class="pold">$315.67</span><span class="pfrom">From</span><span class="pnew">$147.74</span></div><button class="patcbtn" onclick="event.stopPropagation();atc(this)">ADD TO CART</button></div></div>
+<div class="pcard" onclick="openPP(3)"><div class="pimg"><div class="pimgbg"><img src="IMG3" alt="wig"></div><span class="pbadge">Sale!</span></div><div class="pinfo"><div class="pstars">★★★★★ <span>36</span></div><div class="pname">[Upgrade 360] Silver Grey Body Wave/Straight...</div><div class="pprice"><span class="pold">$331.38</span><span class="pfrom">From</span><span class="pnew">$149.12</span></div><button class="patcbtn" onclick="event.stopPropagation();atc(this)">ADD TO CART</button></div></div>
+<div class="pcard" onclick="openPP(4)"><div class="pimg"><div class="pimgbg"><img src="IMG4" alt="wig"></div><span class="pbadge">Sale!</span></div><div class="pinfo"><div class="pstars">★★★★★ <span>200</span></div><div class="pname">[Upgrade 360] #613 Blonde Wigs Body Wave...</div><div class="pprice"><span class="pold">$252.66</span><span class="pfrom">From</span><span class="pnew">$126.33</span></div><button class="patcbtn" onclick="event.stopPropagation();atc(this)">ADD TO CART</button></div></div>
+<div class="pcard" onclick="openPP(5)"><div class="pimg"><div class="pimgbg"><img src="IMG5" alt="wig"></div><span class="pbadge">Sale!</span></div><div class="pinfo"><div class="pstars">★★★★★ <span>36</span></div><div class="pname">WigCool Blonde Highlights Deep Curly Wave...</div><div class="pprice"><span class="pold">$299.00</span><span class="pfrom">From</span><span class="pnew">$149.89</span></div><button class="patcbtn" onclick="event.stopPropagation();atc(this)">ADD TO CART</button></div></div>
+<div class="pcard" onclick="openPP(6)"><div class="pimg"><div class="pimgbg nobg6"></div><span class="pbadge">Sale!</span></div><div class="pinfo"><div class="pstars">★★★★★ <span>115</span></div><div class="pname">Wigcool BaBa Curl Wigs Salon-Quality Swiss HD...</div><div class="pprice"><span class="pold">$163.65</span><span class="pfrom">From</span><span class="pnew">$101.57</span></div><button class="patcbtn" onclick="event.stopPropagation();atc(this)">ADD TO CART</button></div></div>
+<div class="pcard" onclick="openPP(7)"><div class="pimg"><div class="pimgbg nobg7"></div><span class="pbadge">Sale!</span></div><div class="pinfo"><div class="pstars">★★★★★ <span>133</span></div><div class="pname">WigCool Burmese Curly Human Hair Wigs 13X4...</div><div class="pprice"><span class="pold">$265.00</span><span class="pfrom">From</span><span class="pnew">$132.75</span></div><button class="patcbtn" onclick="event.stopPropagation();atc(this)">ADD TO CART</button></div></div>
+<div class="pcard" onclick="openPP(8)"><div class="pimg"><div class="pimgbg nobg8"></div><span class="pbadge">Sale!</span></div><div class="pinfo"><div class="pstars">★★★★★ <span>92</span></div><div class="pname">Money Piece Mix Brown Glueless Wig Pull To Go...</div><div class="pprice"><span class="pold">$237.49</span><span class="pfrom">From</span><span class="pnew">$132.75</span></div><button class="patcbtn" onclick="event.stopPropagation();atc(this)">ADD TO CART</button></div></div>
+<div class="pcard" onclick="openPP(9)"><div class="pimg"><div class="pimgbg nobg9"><img src="https://m.media-amazon.com/images/I/71WtFMmhxIL._AC_SL1500_.jpg" alt="wig" style="width:100%;height:100%;object-fit:cover;display:block"></div><span class="pbadge" style="background:#E63900">Amazon</span></div><div class="pinfo"><div class="pstars">★★★★☆ <span>787</span></div><div class="pname">30 Inch Deep Wave 200% Density 13x4 HD Lace...</div><div class="pprice"><span class="pnew">$89.98</span></div><button class="patcbtn" onclick="event.stopPropagation();atc(this)">ADD TO CART</button></div></div>
+</div>
+</div>
+<div class="banners rev">
+<div class="bp bp1"><div class="bpey">Exclusive Offer</div><div class="bptit">Mystery Box<br><em>Win a $199 Wig</em></div><div class="bpsub">Just $69 — every box has a premium wig.</div><button class="btngold">Grab Yours</button><div class="bpdeco">🎁</div></div>
+<div class="bp bp2"><div class="bpey">Referral Program</div><div class="bptit">Refer &amp; <em>Earn</em></div><div class="bpsub">Earn $20 for every friend who shops.</div><button class="btnout">Join Now</button><div class="bpdeco">💸</div></div>
+</div>
+<section class="nl rev">
+<div class="nley">Stay in the Loop</div>
+<h2 class="nltit">Your Hair Goals,<br><em>Our Expertise</em></h2>
+<p class="nlsub">Subscribe and get 15% off your first order.</p>
+<div class="nlperks"><div class="nlperk">🎁 15% Off</div><div class="nlperk">⚡ Early Access</div><div class="nlperk">💌 Style Tips</div></div>
+<form class="nlform" onsubmit="nlSub(event)"><input class="nlinput" type="email" placeholder="Your email address" required><button class="nlbtn" type="submit">Subscribe</button></form>
+</section>
+<footer>
+<div class="ftop">
+<div><span class="flogo">Luxe<em>Hair</em></span><p class="fdesc">Premium human hair wigs for every queen.</p><div class="fsoc"><a class="fsoca" href="#">f</a><a class="fsoca" href="#">📷</a><a class="fsoca" href="#">♪</a><a class="fsoca" href="#">▶</a></div></div>
+<div><div class="fctit">Shop</div><ul class="flinks"><li><a href="#">HD Lace Wigs</a></li><li><a href="#">Pull &amp; Go</a></li><li><a href="#">360 Lace</a></li><li><a href="#">Color Wigs</a></li><li><a href="#">Sale</a></li></ul></div>
+<div><div class="fctit">Help</div><ul class="flinks"><li><a href="#">Shipping</a></li><li><a href="#">Returns</a></li><li><a href="#">Hair Care</a></li><li><a href="#">Contact</a></li></ul></div>
+<div><div class="fctit">Company</div><ul class="flinks"><li><a href="#">About Us</a></li><li><a href="#">Blog</a></li><li><a href="#">Affiliate</a></li><li><a href="#">Privacy</a></li></ul></div>
+</div>
+<div class="fbot"><p class="fcopy">© 2025 LuxeHair. All rights reserved.</p><div class="pays"><span class="pay">VISA</span><span class="pay">MC</span><span class="pay">PayPal</span><span class="pay">Apple Pay</span></div></div>
+</footer>
+<button class="livechat" onclick="toggleChat()"><div class="cdot"></div> Chat</button>
+<div class="chatpop" id="chatpop"><div class="cphead"><h4>💬 LuxeHair Support</h4><p>Replies in minutes</p></div><div class="cpbody"><div class="cpmsg">👋 Hi! How can we help?</div><div class="cprow"><input class="cpinput" type="text" placeholder="Type..."><button class="cpsend">➤</button></div></div></div>
+<div class="pp" id="pp">
+<div class="pphd"><button class="ppback" onclick="closePP()">← Back</button><span class="pphlogo">Luxe<em>Hair</em></span><button class="ibtn">🛒</button></div>
+<div class="ppbody">
+<div class="ppcrumb" id="ppcrumb"></div>
+<div class="pplayout">
+<div class="ppimgarea"><div class="ppimg" id="ppimg"></div><span class="ppsaletag" id="ppstag"></span><div class="ppthumbs" id="ppthumbs"></div></div>
+<div class="ppinfo" id="ppinfo"></div>
+</div>
+</div>
+</div>
+<script>
+const IMGS=["IMG1","IMG2","IMG3","IMG4","IMG5","","","","https://m.media-amazon.com/images/I/71WtFMmhxIL._AC_SL1500_.jpg"];
+const PD=[
+{id:1,name:"12A 13x4 Straight HD Lace Front Human Hair Wigs Pre Plucked 180 Density — Natural Black",price:127.99,old:138.99,rating:4.5,rev:124,sizes:["14 Inch","16 Inch","18 Inch","20 Inch","22 Inch","24 Inch","26 Inch","28 Inch","30 Inch"],badge:"Sale!",cat:"Lace Front Wigs, Straight Wigs",feats:["13x4 HD Transparent Lace","Pre Plucked Baby Hair","180% Density","100% Human Hair","Natural Black Color"]},
+{id:2,name:"12A Deep Wave Bundles Human Hair 14 16 18 Inch 3 Bundles Deal Unprocessed Virgin Hair",price:66.99,old:111.99,rating:4.8,rev:89,sizes:["14+16+18 Inch","16+18+20 Inch","18+20+22 Inch","20+22+24 Inch"],badge:"Sale!",cat:"Hair Bundles, Deep Wave",feats:["Deep Wave Pattern","Virgin Unprocessed Hair","3 Bundle Deal","12A Grade Quality","Natural Color #1B"]},
+{id:3,name:"12A Human Hair Bundles 18 20 22 24 Inch Body Wave 4 Bundles Brazilian Virgin Hair",price:129.99,old:149.99,rating:4.7,rev:156,sizes:["14+16+18 Inch","16+18+20+22 Inch","18+20+22+24 Inch","20+22+24+26 Inch"],badge:"Sale!",cat:"Hair Bundles, Body Wave",feats:["Body Wave Pattern","4 Bundle Deal","Brazilian Virgin Hair","12A Grade","Natural Black"]},
+{id:4,name:"12A Human Hair Bundles 20 22 24 26 Inch Body Wave 4 Bundles Brazilian Virgin Hair Weave",price:148.99,old:179.99,rating:4.6,rev:203,sizes:["16+18+20+22 Inch","18+20+22+24 Inch","20+22+24+26 Inch","22+24+26+28 Inch"],badge:"Sale!",cat:"Hair Bundles, Body Wave",feats:["Body Wave Pattern","4 Bundle Deal","Extra Long","Brazilian Virgin","12A Grade"]},
+{id:5,name:"WigCool Blonde Highlights Deep Curly Wave 13x4 HD Lace Front Wig Pre Plucked Glueless",price:149.89,old:299.00,rating:5,rev:36,sizes:["16 Inch","18 Inch","20 Inch","22 Inch","24 Inch","26 Inch"],badge:"50% OFF",cat:"HD Lace Wigs, Color Wigs",feats:["Blonde Highlights","Deep Curly Pattern","13x4 HD Lace","Pre Plucked","Glueless"]},
+{id:6,name:"Wigcool BaBa Curl Wigs Salon-Quality Swiss HD Lace Front Human Hair Natural Hairline",price:101.57,old:163.65,rating:5,rev:115,sizes:["14 Inch","16 Inch","18 Inch","20 Inch","22 Inch","24 Inch"],badge:"38% OFF",cat:"HD Lace Wigs, Curly Wigs",feats:["BaBa Curl Pattern","Swiss HD Lace","Salon Quality","Natural Hairline","Pre Plucked"]},
+{id:7,name:"WigCool Burmese Curly Human Hair 13X4 HD Lace Frontal Wig Pre Plucked 180 Density",price:132.75,old:265.00,rating:5,rev:133,sizes:["16 Inch","18 Inch","20 Inch","22 Inch","24 Inch","26 Inch","28 Inch"],badge:"50% OFF",cat:"HD Lace Wigs, Curly Wigs",feats:["Burmese Curly","13x4 HD Lace","180% Density","Pre Plucked","Glueless"]},
+{id:8,name:"Money Piece Mix Brown Glueless Wig Pull To Go 9x6 Lace Closure Human Hair",price:132.75,old:237.49,rating:5,rev:92,sizes:["14 Inch","16 Inch","18 Inch","20 Inch","22 Inch","24 Inch"],badge:"43% OFF",cat:"Glueless Wigs, Pull To Go",feats:["Money Piece Highlights","Pull To Go","9x6 Lace","Mix Brown Color","Glueless"]},
+{id:9,name:"30 Inch Lace Front Wigs Human Hair Deep Wave 200% Density 13x4 HD Full Lace Frontal",price:89.98,old:null,rating:4.1,rev:787,sizes:["24 Inch","26 Inch","28 Inch","30 Inch","32 Inch","34 Inch","36 Inch"],badge:"Amazon's Choice",cat:"Lace Front Wigs, Deep Wave",feats:["200% Density","13x4 HD Full Lace","Pre Plucked","Deep Wave","Glueless"]}
+];
+function openMenu(){document.getElementById('sm').classList.add('on');document.getElementById('ov').classList.add('on')}
+function closeMenu(){document.getElementById('sm').classList.remove('on');document.getElementById('ov').classList.remove('on')}
+function toggleSub(id){document.getElementById(id).classList.toggle('on')}
+let cur=0,tot=3,ap;
+function goTo(n){document.querySelectorAll('.slide')[cur].classList.remove('act');document.querySelectorAll('.dot')[cur].classList.remove('act');cur=(n+tot)%tot;document.querySelectorAll('.slide')[cur].classList.add('act');document.querySelectorAll('.dot')[cur].classList.add('act');document.getElementById('slides').style.transform='translateX(-'+cur*33.333+'%)';clearInterval(ap);ap=setInterval(()=>goTo(cur+1),5000)}
+ap=setInterval(()=>goTo(cur+1),5000);
+let tx=0,ty=0;
+const hero=document.getElementById('hero');
+hero.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;ty=e.touches[0].clientY},{passive:true});
+hero.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty;if(Math.abs(dx)>30&&Math.abs(dx)>Math.abs(dy)){dx<0?goTo(cur+1):goTo(cur-1)}},{passive:true});
+const ro=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('vis')})},{threshold:.1});
+document.querySelectorAll('.rev').forEach(el=>ro.observe(el));
+function nlSub(e){e.preventDefault();const b=e.target.querySelector('.nlbtn');b.textContent='✓ Done!';b.style.background='#2A7A7A';e.target.querySelector('.nlinput').value='';setTimeout(()=>{b.textContent='Subscribe';b.style.background=''},3000)}
+function toggleChat(){document.getElementById('chatpop').classList.toggle('on')}
+function atc(b){const o=b.textContent;b.textContent='✓ Added!';b.style.background='#2A7A7A';setTimeout(()=>{b.textContent=o;b.style.background=''},1800)}
+let ppQ=1;
+function openPP(id){
+const p=PD.find(x=>x.id===id);if(!p)return;
+const save=p.old?Math.round((p.old-p.price)/p.old*100):0;
+const sc=Math.round(p.rating);const stars='★'.repeat(sc)+'☆'.repeat(5-sc);
+document.getElementById('ppcrumb').innerHTML='<a href="#" onclick="closePP()">Home</a> › <span>'+p.cat.split(',')[0].trim()+'</span>';
+const imgEl=document.getElementById('ppimg');
+const imgSrc=IMGS[id-1];
+if(imgSrc){imgEl.innerHTML='<img src="'+imgSrc+'" alt="'+p.name+'" style="width:100%;height:100%;object-fit:cover">';}
+else{imgEl.innerHTML='<div class="ppimgbg" style="background:linear-gradient(160deg,#1A1208,#5A4030);width:100%;height:100%;display:flex;align-items:center;justify-content:center"><span style="font-size:80px;opacity:.2">💁</span></div>';}
+document.getElementById('ppstag').textContent=p.badge;
+document.getElementById('ppthumbs').innerHTML=[1,2,3].map((i)=>'<div class="ppthumb'+(i===1?' act':'')+'" style="background:linear-gradient(160deg,#1A1208,#5A4030)" onclick="this.parentElement.querySelectorAll(\'.ppthumb\').forEach(x=>x.classList.remove(\'act\'));this.classList.add(\'act\')"></div>').join('');
+ppQ=1;
+const szbtns=p.sizes.map((s,i)=>'<button class="ppsizebtn'+(i===0?' act':'')+'" onclick="document.querySelectorAll(\'.ppsizebtn\').forEach(x=>x.classList.remove(\'act\'));this.classList.add(\'act\')">'+s+'</button>').join('');
+const feats=p.feats.map(f=>'<div class="ppfeat"><span class="ck">✓</span> '+f+'</div>').join('');
+const prHTML=p.old?'<span class="ppnew">$'+p.price+'</span><span class="ppold">$'+p.old+'</span><span class="ppsave">Save '+save+'%</span>':'<span class="ppnew">$'+p.price+'</span>';
+const cats=p.cat.split(', ').map(c=>'<a href="#">'+c+'</a>').join(', ');
+document.getElementById('ppinfo').innerHTML='<div class="ppstore">LuxeHair Store</div><h1 class="ppname">'+p.name+'</h1><div class="ppratrow"><span class="ppstars">'+stars+'</span><span class="ppratcnt">'+p.rating+' ('+p.rev+' reviews)</span></div><div class="ppbought">✔ 1K+ bought in past month</div><hr class="ppdiv"><div class="ppprrow">'+prHTML+'</div><hr class="ppdiv"><div><div class="pplbl">Size</div><div class="ppsizes">'+szbtns+'</div></div><div><div class="pplbl">Quantity</div><div class="ppqrow"><button class="ppqbtn" onclick="ppQ=Math.max(1,ppQ-1);document.getElementById(\'ppqn\').textContent=ppQ">−</button><span class="ppqnum" id="ppqn">1</span><button class="ppqbtn" onclick="ppQ++;document.getElementById(\'ppqn\').textContent=ppQ">+</button></div></div><div class="ppacts"><button class="ppaddbtn" onclick="this.textContent=\'✓ Added!\';this.style.background=\'#2A7A7A\';setTimeout(()=>{this.textContent=\'🛒 Add to Cart\';this.style.background=\'\'},2000)">🛒 Add to Cart</button><button class="ppbuybtn">Buy Now</button></div><div class="ppfeats">'+feats+'</div><div class="ppship"><div class="ppshipi"><span>🚚</span> Free Shipping $89+</div><div class="ppshipi"><span>⚡</span> 72-Hour Express</div><div class="ppshipi"><span>↩️</span> 30-Day Returns</div><div class="ppshipi"><span>✨</span> 100% Human Hair</div></div><hr class="ppdiv"><div class="ppcats">Categories: '+cats+'</div>';
+const pg=document.getElementById('pp');pg.classList.add('on');pg.scrollTop=0;document.body.style.overflow='hidden';
+}
+function closePP(){document.getElementById('pp').classList.remove('on');document.body.style.overflow=''}
+</script>
+</body>
+</html>'''
 
-/* HERO */
+# Replace IMG1-IMG5 with actual base64 images
+for i, img in enumerate(imgs, 1):
+    code = code.replace(f'IMG{i}', img)
+
+with open('/tmp/final_code.html', 'w') as f:
+    f.write(code)
+
+print("Total size:", round(len(code)/1024), "KB")
+print("Has IMG1-5 replaced:", 'IMG1' not in code and 'IMG2' not in code)
+EOF
